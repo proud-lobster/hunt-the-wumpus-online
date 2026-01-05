@@ -1,0 +1,34 @@
+services:
+  wumpus-database:
+    image: mysql:latest
+    container_name: database
+    env_file:
+      - .env
+    volumes:
+      - database-v:/var/lib/mysql
+    networks:
+      - wumpus-network
+    ports:
+      - "3306:3306"
+
+  wumpus-server:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - wumpus-database
+    volumes:
+      - ${CERT_HOST_PATH}:/app/keystore.p12:ro
+    networks:
+      - wumpus-network
+    ports:
+      - "8443:8443"
+
+networks:
+  wumpus-network:
+    driver: bridge
+
+volumes:
+  database-v:

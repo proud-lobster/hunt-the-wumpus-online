@@ -1,0 +1,7 @@
+.github/**
+.vscode/**
+
+target/**
+compose/**/.env
+
+game.log
