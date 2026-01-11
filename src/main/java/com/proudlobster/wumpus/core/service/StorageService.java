@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
@@ -60,7 +59,6 @@ public class StorageService implements LifecycleService {
             AND COMPONENT = ?
             """;
 
-    private final AtomicBoolean batchCommit = new AtomicBoolean(false);
     private SettingService settings;
     private DataSource ds;
 
@@ -100,25 +98,6 @@ public class StorageService implements LifecycleService {
         }
     }
 
-    private void startBatchCommit() {
-        batchCommit.set(true);
-        try {
-            ds.getConnection().setAutoCommit(false);
-        } catch (SQLException e) {
-            throw new OperatingError("Unable to start batch commit.", e);
-        }
-    }
-
-    private void endBatchCommit() {
-        batchCommit.set(false);
-        try {
-            ds.getConnection().commit();
-            ds.getConnection().setAutoCommit(true);
-        } catch (SQLException e) {
-            throw new OperatingError("Unable to end batch commit.", e);
-        }
-    }
-
     private Map<Long, Map<String, String>> extract(final ResultSet rs) throws SQLException {
         final Map<Long, Map<String, String>> result = new HashMap<>();
         while (rs.next()) {
@@ -132,26 +111,35 @@ public class StorageService implements LifecycleService {
     }
 
     public void write(final Long id, final String name, final String value) {
-        if (readById(id).containsKey(name)) {
-            try (final Connection c = ds.getConnection()) {
-                final PreparedStatement ps = c.prepareStatement(UPDATE);
-                ps.setString(1, value);
-                ps.setLong(2, id);
-                ps.setString(3, name);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                throw new OperatingError("Could not update value for ID " + id + " and component " + name, e);
+        write(id, new String[] { name }, new String[] { value });
+    }
+
+    public void write(final Long id, final String[] cs, final String[] vs) {
+        final Map<String, String> current = readById(id);
+
+        try (final Connection c = ds.getConnection()) {
+            c.setAutoCommit(false);
+            for (int i = 0; i < cs.length; i++) {
+                final String name = cs[i];
+                final String value = vs[i];
+                if (current.containsKey(name)) {
+                    final PreparedStatement ps = c.prepareStatement(UPDATE);
+                    ps.setString(1, value);
+                    ps.setLong(2, id);
+                    ps.setString(3, name);
+                    ps.executeUpdate();
+                } else {
+                    final PreparedStatement ps = c.prepareStatement(INSERT);
+                    ps.setLong(1, id);
+                    ps.setString(2, name);
+                    ps.setString(3, value);
+                    ps.executeUpdate();
+                }
             }
-        } else {
-            try (final Connection c = ds.getConnection()) {
-                final PreparedStatement ps = c.prepareStatement(INSERT);
-                ps.setLong(1, id);
-                ps.setString(2, name);
-                ps.setString(3, value);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                throw new OperatingError("Could not insert value for ID " + id + " and component " + name, e);
-            }
+            c.commit();
+            c.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new OperatingError("Could not write values for ID " + id, e);
         }
     }
 
@@ -161,23 +149,27 @@ public class StorageService implements LifecycleService {
 
     public void write(final Long id, final Map<Component, String> values) {
         final Map<Component, String> copy = Map.copyOf(values);
-        startBatchCommit();
-        copy.forEach((c, v) -> write(id, c, v));
-        endBatchCommit();
+        final String[] cs = new String[copy.size()];
+        final String[] vs = new String[copy.size()];
+        int i = 0;
+        for (Map.Entry<Component, String> e : copy.entrySet()) {
+            cs[i] = e.getKey().name();
+            vs[i] = e.getValue();
+            i++;
+        }
+        write(id, cs, vs);
     }
 
     public void write(final Map<Long, Map<Component, String>> values) {
         final Map<Long, Map<Component, String>> copy = Map.copyOf(values);
-        startBatchCommit();
         copy.forEach((id, comps) -> write(id, comps));
-        endBatchCommit();
     }
 
     public Map<String, String> readById(final Long id) {
         try (final Connection c = ds.getConnection()) {
             final PreparedStatement ps = c.prepareStatement(SELECT_BY_ID);
             ps.setLong(1, id);
-            return extract(ps.executeQuery()).get(id);
+            return extract(ps.executeQuery()).computeIfAbsent(id, i -> new HashMap<>());
         } catch (SQLException e) {
             throw new OperatingError("Could not read results for ID " + id, e);
         }

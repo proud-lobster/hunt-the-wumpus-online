@@ -50,7 +50,9 @@ public class EntityService implements LifecycleService {
                 final ComponentService componentService,
                 final Map<String, String> initialData) {
             this(identifier, service, componentService);
-            initialData.forEach((c, v) -> this.addComponent(componentService.get(c).orElseThrow(), v));
+            initialData.forEach((c, v) -> this.addComponent(
+                    componentService.get(c).orElseThrow(() -> new OperatingError("No component found with name: " + c)),
+                    v));
         }
 
         @Override
@@ -93,6 +95,13 @@ public class EntityService implements LifecycleService {
         @Override
         public ComponentService componentService() {
             return componentService;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            return o != null &&
+                    o instanceof Entity &&
+                    this.compareTo((Entity) o) == 0;
         }
 
     }
@@ -261,8 +270,13 @@ public class EntityService implements LifecycleService {
     }
 
     public Stream<Entity> lookup(final Component c, final String v) {
-        return storageService.readByComponentWithValue(c.name(), v).entrySet().stream()
-                .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()));
+        final Set<Entity> inMemory = streamByComponentWithValue(c, v).collect(Collectors.toSet());
+        final Stream<InMemoryEntity> inStorage = storageService.readByComponentWithValue(c.name(), v)
+                .entrySet()
+                .stream()
+                .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()))
+                .filter(e -> !inMemory.contains(e));
+        return Stream.concat(inMemory.stream(), inStorage);
     }
 
     public Stream<Entity> lookup(final Component c, final Long v) {

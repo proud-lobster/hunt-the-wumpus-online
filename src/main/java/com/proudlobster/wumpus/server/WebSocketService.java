@@ -1,5 +1,6 @@
 package com.proudlobster.wumpus.server;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -12,6 +13,7 @@ import com.proudlobster.wumpus.core.Engine;
 import com.proudlobster.wumpus.core.entity.Entity;
 import com.proudlobster.wumpus.core.error.CriticalError;
 import com.proudlobster.wumpus.core.service.CommandService;
+import com.proudlobster.wumpus.core.service.ComponentService;
 import com.proudlobster.wumpus.core.service.EntityService;
 import com.proudlobster.wumpus.core.service.LifecycleService;
 import com.proudlobster.wumpus.core.service.SettingService;
@@ -48,6 +50,10 @@ public class WebSocketService implements LifecycleService {
         entities = eng.service(EntityService.class);
         accounts = eng.service(AccountService.class);
         commands = eng.service(CommandService.class);
+
+        Arrays.stream(ServerComponent.values())
+                .forEach(c -> eng.service(ComponentService.class)
+                        .register(c));
     }
 
     @Override
