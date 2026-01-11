@@ -8,6 +8,7 @@ function createHazard(h, desc, prox) {
     e.HAZARD = h;
     e.DESCRIPTIVE = desc;
     e.NEARBY_DESCRIPTIVE = prox;
+    e.persist();
     return e;
 }
 
@@ -24,6 +25,7 @@ function createEnemy(h, name, desc, prox, stats) {
     e.ENERGY_POOL = stats.energy;
     e.BASIC_READY = true;
     e.SPECIAL_READY = true;
+    e.persist();
     return e;
 }
 

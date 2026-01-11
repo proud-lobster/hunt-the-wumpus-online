@@ -3,23 +3,33 @@ package com.proudlobster.wumpus.core.service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.proudlobster.wumpus.core.Engine;
 import com.proudlobster.wumpus.core.entity.Component;
 import com.proudlobster.wumpus.core.entity.CoreComponent;
 import com.proudlobster.wumpus.core.entity.Entity;
 import com.proudlobster.wumpus.core.error.OperatingError;
+import com.proudlobster.wumpus.core.utility.DeduplicatingQueue;
 import com.proudlobster.wumpus.core.utility.Template;
+import com.proudlobster.wumpus.core.worker.QueueWorker;
+import com.proudlobster.wumpus.core.worker.ScheduledWorker;
+import com.proudlobster.wumpus.core.worker.SingleItemWorker;
 
 /**
  * Handles reading entities from storage.
  */
 public class EntityService implements LifecycleService {
+
+    public static Logger LOG = LoggerFactory.getLogger("STORAGE");
 
     private static class InMemoryEntity implements Entity {
 
@@ -36,6 +46,13 @@ public class EntityService implements LifecycleService {
             this.addComponent(CoreComponent.IDENTIFIER, identifier);
         }
 
+        public InMemoryEntity(final Long identifier, final EntityService service,
+                final ComponentService componentService,
+                final Map<String, String> initialData) {
+            this(identifier, service, componentService);
+            initialData.forEach((c, v) -> this.addComponent(componentService.get(c).orElseThrow(), v));
+        }
+
         @Override
         public Map<Component, String> delegate() {
             return service.entities.get(identifier);
@@ -43,6 +60,7 @@ public class EntityService implements LifecycleService {
 
         @Override
         public Entity addComponent(Component c, String v) {
+            service.activityQueue.offer(this);
             delegate().put(c, v);
             service.componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet()).add(identifier);
             return this;
@@ -50,6 +68,7 @@ public class EntityService implements LifecycleService {
 
         @Override
         public Entity removeComponent(Component c) {
+            service.activityQueue.offer(this);
             delegate().remove(c);
             service.componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet()).remove(identifier);
             return this;
@@ -57,6 +76,7 @@ public class EntityService implements LifecycleService {
 
         @Override
         public Entity copyFrom(Entity e) {
+            service.activityQueue.offer(this);
             e.delegate().forEach((c, v) -> {
                 if (c != CoreComponent.IDENTIFIER) {
                     delegate().put(c, v);
@@ -81,10 +101,24 @@ public class EntityService implements LifecycleService {
     private static final AtomicLong counter = new AtomicLong(0);
     private final Map<Long, Map<Component, String>> entities = new ConcurrentHashMap<>();
     private final Map<Component, Set<Long>> componentIndex = new ConcurrentHashMap<>();
+    private final Queue<Entity> activityQueue = new DeduplicatingQueue<>();
     private ComponentService componentService;
+    private StorageService storageService;
+    private SettingService settingService;
+    private ScheduledWorker<EntityService> snapshotWorker;
+    private QueueWorker<Entity> activityWorker;
 
     private Entity wrap(final Long id) {
         return new InMemoryEntity(id, this, this.componentService);
+    }
+
+    private Optional<Entity> loadFromStorage(final Long id) {
+        final Map<String, String> data = storageService.readById(id);
+        if (data.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(new InMemoryEntity(id, this, this.componentService, data));
+        }
     }
 
     /**
@@ -97,6 +131,40 @@ public class EntityService implements LifecycleService {
     @Override
     public void handleInitialized(final Engine eng) {
         componentService = eng.service(ComponentService.class);
+        storageService = eng.service(StorageService.class);
+        settingService = eng.service(SettingService.class);
+
+        snapshotWorker = new SingleItemWorker<EntityService>(
+                settingService.requireNumber("storage.snapshot.intervalMillis")) {
+            @Override
+            public void work(final EntityService item) {
+                LOG.info("+- Starting entity snapshot...");
+                storageService.write(item.entities);
+                LOG.info("+- Entity snapshot complete.");
+            }
+        };
+
+        activityWorker = new QueueWorker<Entity>(
+                settingService.requireNumber("storage.activity.intervalMillis")) {
+            @Override
+            public void work(final Entity item) {
+                LOG.info("+- Writing entity ID {} to storage...", item.identifier());
+                storageService.write(item.identifier(), item.delegate());
+                LOG.info("+- Entity ID {} write complete.", item.identifier());
+            }
+        };
+    }
+
+    @Override
+    public void handleRunning() {
+        snapshotWorker.start();
+        activityWorker.start();
+    }
+
+    @Override
+    public void handleShutdown() {
+        snapshotWorker.stop();
+        activityWorker.stop();
     }
 
     /**
@@ -104,7 +172,8 @@ public class EntityService implements LifecycleService {
      * @return a new entity with that identifier
      */
     public Entity create(Long id) {
-        return new InMemoryEntity(id, this, this.componentService);
+        return checkByIdentifier(id)
+                .orElseGet(() -> new InMemoryEntity(id, this, this.componentService));
     }
 
     /**
@@ -134,7 +203,8 @@ public class EntityService implements LifecycleService {
      */
     public Optional<Entity> checkByIdentifier(Long id) {
         return Optional.ofNullable(entities.get(id))
-                .map(e -> wrap(id));
+                .map(e -> wrap(id))
+                .or(() -> loadFromStorage(id));
     }
 
     /**
@@ -184,5 +254,18 @@ public class EntityService implements LifecycleService {
      */
     public Stream<Entity> streamByComponentWithValue(final Component c, final Long l) {
         return streamByComponent(c).filter(e -> l.equals(e.longValue(c)));
+    }
+
+    public void persist(final Entity e) {
+        storageService.write(e.identifier(), e.delegate());
+    }
+
+    public Stream<Entity> lookup(final Component c, final String v) {
+        return storageService.readByComponentWithValue(c.name(), v).entrySet().stream()
+                .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()));
+    }
+
+    public Stream<Entity> lookup(final Component c, final Long v) {
+        return lookup(c, v.toString());
     }
 }

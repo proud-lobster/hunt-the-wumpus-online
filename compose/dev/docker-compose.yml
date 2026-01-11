@@ -2,6 +2,11 @@ services:
   wumpus-database:
     image: mysql:latest
     container_name: database
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-p$MYSQL_ROOT_PASSWORD" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     env_file:
       - .env
     volumes:
@@ -18,13 +23,20 @@ services:
     env_file:
       - .env
     depends_on:
-      - wumpus-database
+      wumpus-database:
+        condition: service_healthy
+    restart: on-failure
+    command:
+      - "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+      - "-jar"
+      - "/app/app.jar"
     volumes:
       - ${CERT_HOST_PATH}:/app/keystore.p12:ro
     networks:
       - wumpus-network
     ports:
       - "8443:8443"
+      - "5005:5005"
 
 networks:
   wumpus-network:

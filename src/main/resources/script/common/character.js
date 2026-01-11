@@ -384,16 +384,19 @@ function create() {
     knife.EQUIPPED = true;
     knife.MELEE = true;
     c.addContents(knife);
+    knife.persist();
 
     const bow = items.createWeapon("a bow", "a family heirloom hunting bow", "BOW");
     bow.EQUIPPED = true;
     bow.RANGE = true;
     c.addContents(bow);
+    bow.persist();
 
     const arrow = items.createAmmo("a crooked arrow", "a family heirloom crooked arrow", "ARROW", 6, 20, 10);
     arrow.EQUIPPED = true;
     arrow.EFFECT = "crooked";
     c.addContents(arrow);
+    arrow.persist();
 
     c.INTRODUCTION = `
 Your name is ${c.NAME}${c.SURNAME ? " " + c.SURNAME : ""}.
@@ -402,6 +405,7 @@ Leaving behind your ${lifestyle.description} upbringing at ${age} years of age y
 Equiped with the heirloom hunting bow, knife, lantern, and a single crooked arrow bequeathed to you by your ancestors, you embark for the arctic north in search of legendary prey: The Wumpus!
             `;
 
+    c.persist();
     return wrap(c);
 }
 
