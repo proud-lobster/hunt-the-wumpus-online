@@ -79,13 +79,7 @@ public class AccountService implements LifecycleService {
     }
 
     public Optional<? extends Entity> accountByEmail(final String email) {
-        return entities.streamByComponentWithValue(ServerComponent.EMAIL_ADDRESS, email)
-                .filter(ServerComponent.ACCOUNT)
-                .findFirst();
-    }
-
-    public Optional<? extends Entity> accountByPlayer(final Long playerId) {
-        return entities.streamByComponentWithValue(CoreComponent.PLAYER_REF, playerId)
+        return entities.lookup(ServerComponent.EMAIL_ADDRESS, email)
                 .filter(ServerComponent.ACCOUNT)
                 .findFirst();
     }
@@ -111,9 +105,12 @@ public class AccountService implements LifecycleService {
         final boolean isSuccessful = account.is(ServerComponent.CLIENT_TOKEN) &&
                 Security.hash(token, salt).equals(account.stringValue(ServerComponent.CLIENT_TOKEN));
 
+        // Locked
         if (isLocked) {
             return Directive.FAILURE.create(sessionId, LOGIN_LOCKED);
-        } else if (!isSuccessful) {
+        }
+        // Failed login
+        else if (!isSuccessful) {
             final String tempcode = Security.tempCode();
             final String hashtempcode = Security.hash(tempcode, salt);
 
@@ -125,7 +122,9 @@ public class AccountService implements LifecycleService {
                     .addComponent(ServerComponent.TEMP_CODE_ATTEMPTS, 0L);
 
             return Directive.PRINT.create(sessionId, CODE_PROMPT);
-        } else {
+        }
+        // Successful login
+        else {
             final boolean reconnect = account.is(ServerComponent.DISCONNECT_TIMESTAMP);
             final String playerName = account
                     .reference(CoreComponent.PLAYER_REF)
@@ -217,6 +216,9 @@ public class AccountService implements LifecycleService {
                 .addComponent(ServerComponent.TEMP_CODE_ATTEMPTS, 0L);
 
         newPlayer.addComponent(ServerComponent.ACCOUNT_REF, newAccount.identifier());
+
+        newPlayer.persist();
+        newAccount.persist();
 
         emailService.sendEmail(email, ACCT_EMAIL_SUBJ, String.format(ACCT_EMAIL_BODY, playerName));
         emailService.sendEmail(email, CODE_EMAIL_SUBJ, String.format(CODE_EMAIL_BODY, tempcode));

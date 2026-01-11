@@ -23,6 +23,8 @@ function f(e) {
         cre.tick();
 
     }
+
+    // TODO lair cleanup - need a proc that will expire any lairs that don't contain a wumpus or any characters
 }
 
 export default {

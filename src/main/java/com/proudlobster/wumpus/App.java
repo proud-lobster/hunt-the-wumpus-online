@@ -7,6 +7,7 @@ import com.proudlobster.wumpus.core.service.EntityService;
 import com.proudlobster.wumpus.core.service.ProcessorService;
 import com.proudlobster.wumpus.core.service.Service;
 import com.proudlobster.wumpus.core.service.SettingService;
+import com.proudlobster.wumpus.core.service.StorageService;
 import com.proudlobster.wumpus.script.ScriptService;
 import com.proudlobster.wumpus.server.WebSocketService;
 import com.proudlobster.wumpus.server.service.AccountService;
@@ -17,6 +18,7 @@ public interface App {
     Service[] services = new Service[] {
             new SettingService(),
             new ComponentService(),
+            new StorageService(),
             new EntityService(),
             new EmailService(),
             new ProcessorService(),

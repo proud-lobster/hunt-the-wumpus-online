@@ -48,6 +48,13 @@
             <version>12.0.15</version>
         </dependency>
 
+        <!-- Storage -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.1.0</version>
+        </dependency>
+
         <!-- Email -->
         <dependency>
             <groupId>com.sun.mail</groupId>

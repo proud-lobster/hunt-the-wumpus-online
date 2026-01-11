@@ -14,6 +14,7 @@ function createRoom(zone) {
     room.DETAILED = "A deep, dark cavern tunnel.";
     room.ZONE_REF = zone;
     zone.addContents(room);
+    room.persist();
     return room;
 }
 
@@ -23,6 +24,8 @@ function createLink(room, target, dir) {
     link.DESCRIPTIVE = target.DESCRIPTIVE;
     link.DIRECTION = dir;
     room.addContents(link);
+    link.persist();
+    return link;
 }
 
 export default {
@@ -44,6 +47,7 @@ export default {
         const wild = app.entitiesByComponentValue("NAME", "Wilderness")[0];
         entrance.ZONE_REF = wild;
         wild.addContents(entrance);
+        entrance.persist();
 
         // Initialize room grid
         const grid = Array.from({ length: width }, () => new Array(height));
@@ -118,6 +122,7 @@ export default {
         const pit = hazards.PIT_TRAP.create();
         movement.transport(pit, randomRooms[2]);
 
+        lair.persist();
         return entrance;
     },
 

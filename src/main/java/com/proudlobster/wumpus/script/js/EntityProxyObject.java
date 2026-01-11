@@ -32,7 +32,8 @@ public class EntityProxyObject implements ProxyObject, Entity {
         this.e = e;
         this.execs = Map.of(
                 "addContents", this::addContents,
-                "removeContents", this::removeContents);
+                "removeContents", this::removeContents,
+                "persist", this::persist);
     }
 
     private void touch() {
@@ -53,6 +54,11 @@ public class EntityProxyObject implements ProxyObject, Entity {
                 .map(intf::unwrap)
                 .toList()
                 .toArray(new Entity[0]));
+    }
+
+    private Object persist(final Value... vs) {
+        touch();
+        return e.persist();
     }
 
     private Object memberValue(final Component c) {

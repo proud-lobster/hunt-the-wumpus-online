@@ -114,7 +114,9 @@ public interface Entity extends Comparable<Entity> {
      * @return this entity made expired, in transactional form if it was not already
      */
     default Entity expire() {
-        return addComponent(CoreComponent.EXPIRED);
+        final Entity e = addComponent(CoreComponent.EXPIRED);
+        e.persist();
+        return e;
     }
 
     /**
@@ -244,6 +246,11 @@ public interface Entity extends Comparable<Entity> {
      */
     default Entity removeContents(final Entity... es) {
         return removeReferences(CoreComponent.CONTAINER, es);
+    }
+
+    default Entity persist() {
+        service().persist(this);
+        return this;
     }
 
     default String asString() {
