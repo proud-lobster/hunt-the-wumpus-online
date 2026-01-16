@@ -32,6 +32,6 @@ function f(player, args) {
 
 export default {
     name: "remove",
-    aliases: ["rem"],
+    aliases: "rem",
     apply: command.createPlayerCommand(f)
 }

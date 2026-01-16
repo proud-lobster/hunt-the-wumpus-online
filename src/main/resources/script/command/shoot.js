@@ -91,6 +91,6 @@ function f(char, args) {
 
 export default {
     name: "shoot",
-    aliases: ["sh"],
+    aliases: "sh",
     apply: command.createCharacterCommand(f)
 }

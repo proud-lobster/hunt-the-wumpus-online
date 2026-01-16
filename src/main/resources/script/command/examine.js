@@ -18,6 +18,6 @@ function f(char, args) {
 
 export default {
     name: "examine",
-    aliases: ["ex"],
+    aliases: "ex",
     apply: command.createCharacterCommand(f)
 }

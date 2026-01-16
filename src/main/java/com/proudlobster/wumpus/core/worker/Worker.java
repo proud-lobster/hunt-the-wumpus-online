@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.LoggerFactory;
 
-public interface Worker<W> {
+public interface Worker<W> extends Runnable {
 
     void work(W item);
 

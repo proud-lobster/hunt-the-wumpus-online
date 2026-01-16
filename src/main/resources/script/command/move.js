@@ -12,6 +12,6 @@ function f(char, args) {
 
 export default {
     name: "move",
-    aliases: ["m"],
+    aliases: "m",
     apply: command.createCharacterCommand(f)
 }

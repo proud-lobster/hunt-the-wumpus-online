@@ -1,19 +1,18 @@
 package com.proudlobster.wumpus.script.js;
 
-import org.graalvm.polyglot.Value;
-
 import com.proudlobster.wumpus.core.entity.Component;
+import com.proudlobster.wumpus.script.ScriptExecutor.ModuleProxy;
 
 public class JsComponent implements Component, JsModule {
 
-    private final Value mod;
+    private final JsModule mod;
     private final String name;
     private final DataType type;
 
     public JsComponent(final JsModule mod) {
-        this.mod = mod.module();
-        this.name = mod.getMember("name").asString();
-        this.type = DataType.valueOf(mod.getMember("type").asString());
+        this.mod = mod;
+        this.name = mod.memberString("name");
+        this.type = DataType.valueOf(mod.memberString("type"));
     }
 
     @Override
@@ -27,7 +26,7 @@ public class JsComponent implements Component, JsModule {
     }
 
     @Override
-    public Value module() {
-        return mod;
+    public ModuleProxy module() {
+        return mod.module();
     }
 }

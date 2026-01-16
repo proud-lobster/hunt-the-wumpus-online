@@ -11,6 +11,6 @@ function f(player) {
 
 export default {
     name: "list",
-    aliases: ["ls"],
+    aliases: "ls",
     apply: command.createPlayerCommand(f)
 }

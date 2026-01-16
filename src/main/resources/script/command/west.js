@@ -3,6 +3,6 @@ import movement from "../common/movement.js";
 
 export default {
     name: "west",
-    aliases: ["w"],
+    aliases: "w",
     apply: command.createCharacterCommand((c) => movement.move(c.entity, movement.directions.west.value))
 }

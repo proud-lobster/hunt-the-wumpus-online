@@ -34,6 +34,6 @@ function f(player) {
 
 export default {
     name: "create",
-    aliases: [],
+    aliases: "",
     apply: command.createPlayerCommand(f)
 }

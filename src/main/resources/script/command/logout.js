@@ -1,6 +1,6 @@
 export default {
     name: "logout",
-    aliases: [],
+    aliases: "",
     apply(e) {
         // TODO how to handle logout?
     }

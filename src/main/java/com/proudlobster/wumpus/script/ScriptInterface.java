@@ -1,11 +1,9 @@
-package com.proudlobster.wumpus.script.js;
+package com.proudlobster.wumpus.script;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.graalvm.polyglot.Value;
@@ -25,14 +23,12 @@ public class ScriptInterface {
     private final ComponentService components;
     private final WebSocketService webSockets;
     private final Map<Long, EntityProxyObject> es;
-    private final Set<Long> touched;
 
     public ScriptInterface(
             final EntityService entities,
             final ComponentService components,
             final WebSocketService webSockets) {
         this.es = new HashMap<>();
-        this.touched = new HashSet<>();
         this.entities = entities;
         this.components = components;
         this.webSockets = webSockets;
@@ -61,20 +57,7 @@ public class ScriptInterface {
     }
 
     protected Entity create(final Entity e) {
-        final Entity t = wrap(e);
-        touch(t.identifier());
-        return t;
-    }
-
-    protected List<Entity> receiveTouchedEntities() {
-        final List<Entity> tes = touched.stream().map(es::get).map(EntityProxyObject::original).toList();
-        es.clear();
-        touched.clear();
-        return tes;
-    }
-
-    protected void touch(final Long id) {
-        touched.add(id);
+        return wrap(e);
     }
 
     protected Optional<Entity> resolveReference(final Long id) {
@@ -82,7 +65,7 @@ public class ScriptInterface {
                 .checkByIdentifier(id)
                 .map(this::wrap);
         final Optional<Entity> fromInterface = Optional
-                .ofNullable(touched.contains(id))
+                .ofNullable(es.containsKey(id))
                 .filter(t -> t)
                 .map(t -> es.get(id));
         return fromInterface.or(fromStorage);

@@ -1,25 +1,24 @@
 package com.proudlobster.wumpus.script.js;
 
-import org.graalvm.polyglot.Value;
-
 import com.proudlobster.wumpus.core.processor.ComponentProcessor;
 import com.proudlobster.wumpus.core.service.ComponentService;
+import com.proudlobster.wumpus.script.ScriptExecutor.ModuleProxy;
 
 /**
  * A Javascript script implementation of ComponentProcessor.
  */
 public class JsComponentProcessor extends ComponentProcessor implements JsProcessor {
 
-    private final Value mod;
+    private final JsModule mod;
 
     public JsComponentProcessor(final JsModule mod, final ComponentService components) {
-        super(components.getOperational(mod.getMember("component").asString()), JsProcessor.load(mod));
-        this.mod = mod.module();
+        super(components.getOperational(mod.memberString("component")), JsProcessor.load(mod));
+        this.mod = mod;
     }
 
     @Override
-    public Value module() {
-        return mod;
+    public ModuleProxy module() {
+        return mod.module();
     }
 
 }

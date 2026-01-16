@@ -1,4 +1,4 @@
-package com.proudlobster.wumpus.script.js;
+package com.proudlobster.wumpus.script;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,12 +36,7 @@ public class EntityProxyObject implements ProxyObject, Entity {
                 "persist", this::persist);
     }
 
-    private void touch() {
-        intf.touch(this.identifier());
-    }
-
     private Object addContents(final Value... vs) {
-        touch();
         return e.addContents(Arrays.stream(vs)
                 .map(intf::unwrap)
                 .toList()
@@ -49,7 +44,6 @@ public class EntityProxyObject implements ProxyObject, Entity {
     }
 
     private Object removeContents(final Value... vs) {
-        touch();
         return e.removeContents(Arrays.stream(vs)
                 .map(intf::unwrap)
                 .toList()
@@ -57,7 +51,6 @@ public class EntityProxyObject implements ProxyObject, Entity {
     }
 
     private Object persist(final Value... vs) {
-        touch();
         return e.persist();
     }
 
@@ -124,8 +117,6 @@ public class EntityProxyObject implements ProxyObject, Entity {
 
     @Override
     public void putMember(String key, Value value) {
-        touch();
-
         final Component c = e.componentService().getOperational(key);
 
         if (value.hasArrayElements()) {

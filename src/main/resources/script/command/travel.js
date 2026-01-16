@@ -26,6 +26,6 @@ function f(char, args) {
 
 export default {
     name: "travel",
-    aliases: ["tr"],
+    aliases: "tr",
     apply: command.createCharacterCommand(f)
 }

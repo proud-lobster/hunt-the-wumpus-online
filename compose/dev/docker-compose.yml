@@ -32,6 +32,7 @@ services:
       - "/app/app.jar"
     volumes:
       - ${CERT_HOST_PATH}:/app/keystore.p12:ro
+      - ${SCRIPT_HOST_PATH}:/app/scripts
     networks:
       - wumpus-network
     ports:

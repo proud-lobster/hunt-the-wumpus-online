@@ -12,7 +12,7 @@ logout - logs out from the server (NOTE: will invalidate your session token and 
 
 export default {
     name: "help",
-    aliases: ["h"],
+    aliases: "h",
     apply(e) {
         const char = e.PLAYER_REF.ACTIVE_CHARACTER_REF;
         var msg = LOBBY_MENU;

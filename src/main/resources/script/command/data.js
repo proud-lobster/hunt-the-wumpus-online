@@ -3,7 +3,7 @@ import player from "../common/player.js";
 
 export default {
     name: "data",
-    aliases: [],
+    aliases: "",
     apply(e) {
         const args = e.ARGUMENTS.split(" ");
         const p = e.PLAYER_REF;

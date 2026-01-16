@@ -50,6 +50,6 @@ function f(char, args) {
 
 export default {
     name: "strike",
-    aliases: ["t"],
+    aliases: "t",
     apply: command.createCharacterCommand(f)
 }

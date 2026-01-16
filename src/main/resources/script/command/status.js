@@ -28,6 +28,6 @@ function f(char) {
 
 export default {
     name: "status",
-    aliases: ["st", "stat"],
+    aliases: "st, stat",
     apply: command.createCharacterCommand(f)
 }

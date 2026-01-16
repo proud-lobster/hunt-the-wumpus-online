@@ -27,6 +27,6 @@ function f(player, args) {
 
 export default {
     name: "select",
-    aliases: ["sel"],
+    aliases: "sel",
     apply: command.createPlayerCommand(f)
 }

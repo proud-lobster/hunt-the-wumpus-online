@@ -11,6 +11,6 @@ function f(char) {
 
 export default {
     name: "inventory",
-    aliases: ["in"],
+    aliases: "in",
     apply: command.createCharacterCommand(f)
 }
