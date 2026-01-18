@@ -11,7 +11,7 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 
 import com.proudlobster.wumpus.core.entity.Entity;
-import com.proudlobster.wumpus.core.error.CriticalError;
+import com.proudlobster.wumpus.core.error.OperatingError;
 
 public class ScriptExecutor {
 
@@ -76,7 +76,7 @@ public class ScriptExecutor {
         try {
             return executor.submit(call).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new CriticalError("Script evaluation failed.", e);
+            throw new OperatingError(e.getCause().getMessage().replace("Error: ", ""), e);
         }
     }
 
