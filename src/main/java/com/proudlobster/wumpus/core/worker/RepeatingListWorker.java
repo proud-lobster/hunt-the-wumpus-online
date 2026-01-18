@@ -3,11 +3,11 @@ package com.proudlobster.wumpus.core.worker;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.LoggerFactory;
 
 public abstract class RepeatingListWorker<W> extends ScheduledWorker<W> {
 
     private final List<W> items;
-    private int currentIndex = 0;
 
     public RepeatingListWorker(final long interval) {
         super(interval);
@@ -20,13 +20,17 @@ public abstract class RepeatingListWorker<W> extends ScheduledWorker<W> {
     }
 
     @Override
-    public Optional<W> fetch() {
-        if (items.isEmpty()) {
-            return Optional.empty();
+    public void run() {
+        try {
+            items.stream().forEach(this::work);
+        } catch (final Exception e) {
+            LoggerFactory.getLogger("WORKER").error("Worker encountered an error: " + e.getMessage(), e);
         }
-        W item = items.get(currentIndex);
-        currentIndex = (currentIndex + 1) % items.size();
-        return Optional.of(item);
+    }
+
+    @Override
+    public Optional<W> fetch() {
+        return Optional.empty();
     }
 
     @Override

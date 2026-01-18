@@ -3,7 +3,6 @@ package com.proudlobster.wumpus.core.service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,7 +17,6 @@ import com.proudlobster.wumpus.core.entity.Component;
 import com.proudlobster.wumpus.core.entity.CoreComponent;
 import com.proudlobster.wumpus.core.entity.Entity;
 import com.proudlobster.wumpus.core.error.OperatingError;
-import com.proudlobster.wumpus.core.utility.DeduplicatingQueue;
 import com.proudlobster.wumpus.core.utility.Template;
 import com.proudlobster.wumpus.core.worker.QueueWorker;
 import com.proudlobster.wumpus.core.worker.ScheduledWorker;
@@ -62,28 +60,28 @@ public class EntityService implements LifecycleService {
 
         @Override
         public Entity addComponent(Component c, String v) {
-            service.activityQueue.offer(this);
             delegate().put(c, v);
             service.componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet()).add(identifier);
+            service.activityWorker.submit(identifier);
             return this;
         }
 
         @Override
         public Entity removeComponent(Component c) {
-            service.activityQueue.offer(this);
             delegate().remove(c);
             service.componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet()).remove(identifier);
+            service.activityWorker.submit(identifier);
             return this;
         }
 
         @Override
         public Entity copyFrom(Entity e) {
-            service.activityQueue.offer(this);
             e.delegate().forEach((c, v) -> {
                 if (c != CoreComponent.IDENTIFIER) {
                     delegate().put(c, v);
                 }
             });
+            service.activityWorker.submit(identifier);
             return this;
         }
 
@@ -110,12 +108,11 @@ public class EntityService implements LifecycleService {
     private static final AtomicLong counter = new AtomicLong(0);
     private final Map<Long, Map<Component, String>> entities = new ConcurrentHashMap<>();
     private final Map<Component, Set<Long>> componentIndex = new ConcurrentHashMap<>();
-    private final Queue<Entity> activityQueue = new DeduplicatingQueue<>();
     private ComponentService componentService;
     private StorageService storageService;
     private SettingService settingService;
     private ScheduledWorker<EntityService> snapshotWorker;
-    private QueueWorker<Entity> activityWorker;
+    private QueueWorker<Long> activityWorker;
 
     private Entity wrap(final Long id) {
         return new InMemoryEntity(id, this, this.componentService);
@@ -153,13 +150,13 @@ public class EntityService implements LifecycleService {
             }
         };
 
-        activityWorker = new QueueWorker<Entity>(
+        activityWorker = new QueueWorker<Long>(
                 settingService.requireNumber("storage.activity.intervalMillis")) {
             @Override
-            public void work(final Entity item) {
-                LOG.info("+- Writing entity ID {} to storage...", item.identifier());
-                storageService.write(item.identifier(), item.delegate());
-                LOG.info("+- Entity ID {} write complete.", item.identifier());
+            public void work(final Long item) {
+                LOG.info("+- Writing entity ID {} to storage...", item);
+                storageService.write(item, entities.get(item));
+                LOG.info("+- Entity ID {} write complete.", item);
             }
         };
     }

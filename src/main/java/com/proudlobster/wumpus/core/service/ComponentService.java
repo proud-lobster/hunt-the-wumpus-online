@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.proudlobster.wumpus.core.Engine;
 import com.proudlobster.wumpus.core.entity.Component;
 import com.proudlobster.wumpus.core.entity.CoreComponent;
 
@@ -22,7 +23,7 @@ public class ComponentService implements LifecycleService, Repository<Component>
     }
 
     @Override
-    public void handleRunning() {
+    public void handleInitialized(final Engine eng) {
         Arrays.stream(CoreComponent.values()).forEach(this::register);
     }
 

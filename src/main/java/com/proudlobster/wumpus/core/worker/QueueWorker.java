@@ -2,7 +2,7 @@ package com.proudlobster.wumpus.core.worker;
 
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import com.proudlobster.wumpus.core.utility.DeduplicatingQueue;
 
 public abstract class QueueWorker<W> extends ScheduledWorker<W> {
 
@@ -10,7 +10,7 @@ public abstract class QueueWorker<W> extends ScheduledWorker<W> {
 
     public QueueWorker(final long interval) {
         super(interval);
-        this.q = new ConcurrentLinkedQueue<>();
+        this.q = new DeduplicatingQueue<>();
     }
 
     @Override
@@ -20,6 +20,6 @@ public abstract class QueueWorker<W> extends ScheduledWorker<W> {
 
     @Override
     public void submit(final W item) {
-        q.add(item);
+        q.offer(item);
     }
 }
