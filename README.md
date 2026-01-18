@@ -1,4 +1,4 @@
 # Hunt the Wumpus: Online
 
 notes
-- cooldowns stuck?
+- not regenning pools

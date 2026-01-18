@@ -80,8 +80,7 @@ public class AccountService implements LifecycleService {
 
     public Optional<? extends Entity> accountByEmail(final String email) {
         return entities.lookup(ServerComponent.EMAIL_ADDRESS, email)
-                .filter(ServerComponent.ACCOUNT)
-                .findFirst();
+                .filter(ServerComponent.ACCOUNT);
     }
 
     public Entity playerBySession(final Long sessionId) {

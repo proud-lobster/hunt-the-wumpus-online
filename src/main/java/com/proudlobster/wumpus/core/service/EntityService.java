@@ -266,17 +266,23 @@ public class EntityService implements LifecycleService {
         storageService.write(e.identifier(), e.delegate());
     }
 
-    public Stream<Entity> lookup(final Component c, final String v) {
+    public Optional<Entity> lookup(final Component c) {
+        return lookup(c, "");
+    }
+
+    public Optional<Entity> lookup(final Component c, final String v) {
         final Set<Entity> inMemory = streamByComponentWithValue(c, v).collect(Collectors.toSet());
         final Stream<InMemoryEntity> inStorage = storageService.readByComponentWithValue(c.name(), v)
                 .entrySet()
                 .stream()
                 .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()))
                 .filter(e -> !inMemory.contains(e));
-        return Stream.concat(inMemory.stream(), inStorage);
+        return Stream.concat(inMemory.stream(), inStorage)
+                .sorted()
+                .findFirst();
     }
 
-    public Stream<Entity> lookup(final Component c, final Long v) {
+    public Optional<Entity> lookup(final Component c, final Long v) {
         return lookup(c, v.toString());
     }
 }

@@ -96,6 +96,10 @@ public class ScriptInterface {
                 .collect(Collectors.toList());
     }
 
+    public Entity lookup(final String c) {
+        return entities.lookup(components.getOperational(c)).orElse(null);
+    }
+
     public void sendMessage(final Value player, final String directive, final String args) {
         webSockets.send(unwrap(player).identifier(), directive, args);
     }
