@@ -97,7 +97,10 @@ public class ScriptInterface {
     }
 
     public Entity lookup(final String c) {
-        return entities.lookup(components.getOperational(c)).orElse(null);
+        return entities
+                .lookup(components.getOperational(c))
+                .map(this::wrap)
+                .orElse(null);
     }
 
     public void sendMessage(final Value player, final String directive, final String args) {
