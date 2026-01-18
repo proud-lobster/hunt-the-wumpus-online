@@ -33,7 +33,8 @@ public class EntityProxyObject implements ProxyObject, Entity {
         this.execs = Map.of(
                 "addContents", this::addContents,
                 "removeContents", this::removeContents,
-                "persist", this::persist);
+                "persist", this::persist,
+                "expire", this::expire);
     }
 
     private Object addContents(final Value... vs) {
@@ -52,6 +53,10 @@ public class EntityProxyObject implements ProxyObject, Entity {
 
     private Object persist(final Value... vs) {
         return e.persist();
+    }
+
+    private Object expire(final Value... vs) {
+        return e.expire();
     }
 
     private Object memberValue(final Component c) {
