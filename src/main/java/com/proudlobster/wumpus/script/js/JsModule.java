@@ -12,7 +12,8 @@ import com.proudlobster.wumpus.script.ScriptExecutor.ModuleProxy;
 public interface JsModule {
 
     public static JsModule load(final Source src, final ScriptExecutor exec) {
-        return () -> exec.module(src);
+        final ModuleProxy proxy = exec.module(src);
+        return () -> proxy;
     }
 
     ModuleProxy module();

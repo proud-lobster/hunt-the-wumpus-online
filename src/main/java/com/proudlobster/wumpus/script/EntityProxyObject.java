@@ -162,7 +162,7 @@ public class EntityProxyObject implements ProxyObject, Entity {
 
     @Override
     public Entity copyFrom(Entity e) {
-        e.copyFrom(e);
+        this.e.copyFrom(e);
         return this;
     }
 

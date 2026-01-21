@@ -23,19 +23,23 @@ public class ScriptInterface {
     private final ComponentService components;
     private final WebSocketService webSockets;
     private final Map<Long, EntityProxyObject> es;
+    private final Boolean debug;
+    private String debugModule;
 
     public ScriptInterface(
             final EntityService entities,
             final ComponentService components,
-            final WebSocketService webSockets) {
+            final WebSocketService webSockets,
+            final Boolean debug) {
         this.es = new HashMap<>();
         this.entities = entities;
         this.components = components;
         this.webSockets = webSockets;
+        this.debug = debug;
     }
 
     private EntityProxyObject _wrap(final Entity e) {
-        return new EntityProxyObject(this, entities.create(e.identifier()).copyFrom(e));
+        return new EntityProxyObject(this, e);
     }
 
     private String unwrapToString(final Value v) {
@@ -103,8 +107,24 @@ public class ScriptInterface {
                 .orElse(null);
     }
 
+    public Entity lookup(final String c, final String v) {
+        return entities
+                .lookup(components.getOperational(c), v)
+                .map(this::wrap)
+                .orElse(null);
+    }
+
     public void sendMessage(final Value player, final String directive, final String args) {
         webSockets.send(unwrap(player).identifier(), directive, args);
     }
 
+    public void setDebugModule(final String moduleName) {
+        this.debugModule = moduleName;
+    }
+
+    public void debug(final String message) {
+        if (debug) {
+            System.out.println(System.currentTimeMillis() + " (SCRIPT:" + debugModule + ") " + message);
+        }
+    }
 }

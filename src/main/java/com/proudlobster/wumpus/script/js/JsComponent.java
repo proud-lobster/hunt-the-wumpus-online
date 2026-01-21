@@ -9,10 +9,10 @@ public class JsComponent implements Component, JsModule {
     private final String name;
     private final DataType type;
 
-    public JsComponent(final JsModule mod) {
+    public JsComponent(final JsModule mod, final String name, final String type) {
         this.mod = mod;
-        this.name = mod.memberString("name");
-        this.type = DataType.valueOf(mod.memberString("type"));
+        this.name = name;
+        this.type = DataType.valueOf(type);
     }
 
     @Override

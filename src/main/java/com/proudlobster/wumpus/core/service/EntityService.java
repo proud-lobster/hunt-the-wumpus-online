@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -60,6 +61,10 @@ public class EntityService implements LifecycleService {
 
         @Override
         public Entity addComponent(Component c, String v) {
+            final String prev = delegate().get(c);
+            if (Objects.equals(prev, v)) {
+                return this;
+            }
             delegate().put(c, v);
             service.componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet()).add(identifier);
             service.activityWorker.submit(identifier);
@@ -272,11 +277,12 @@ public class EntityService implements LifecycleService {
 
     public Optional<Entity> lookup(final Component c, final String v) {
         final Set<Entity> inMemory = streamByComponentWithValue(c, v).collect(Collectors.toSet());
-        final Stream<InMemoryEntity> inStorage = storageService.readByComponentWithValue(c.name(), v)
+        final Stream<InMemoryEntity> inStorage = storageService
+                .readByComponentWithValue(c.name(), v)
                 .entrySet()
                 .stream()
-                .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()))
-                .filter(e -> !inMemory.contains(e));
+                .filter(entry -> !entities.keySet().contains(entry.getKey()))
+                .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()));
         return Stream.concat(inMemory.stream(), inStorage)
                 .sorted()
                 .findFirst();

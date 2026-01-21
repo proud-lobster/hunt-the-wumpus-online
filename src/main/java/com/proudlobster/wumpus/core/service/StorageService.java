@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
@@ -123,11 +124,14 @@ public class StorageService implements LifecycleService {
                 final String name = cs[i];
                 final String value = vs[i];
                 if (current.containsKey(name)) {
-                    final PreparedStatement ps = c.prepareStatement(UPDATE);
-                    ps.setString(1, value);
-                    ps.setLong(2, id);
-                    ps.setString(3, name);
-                    ps.executeUpdate();
+                    final String existing = current.get(name);
+                    if (!Objects.equals(existing, value)) {
+                        final PreparedStatement ps = c.prepareStatement(UPDATE);
+                        ps.setString(1, value);
+                        ps.setLong(2, id);
+                        ps.setString(3, name);
+                        ps.executeUpdate();
+                    }
                 } else {
                     final PreparedStatement ps = c.prepareStatement(INSERT);
                     ps.setLong(1, id);

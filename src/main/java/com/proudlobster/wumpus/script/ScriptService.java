@@ -5,6 +5,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.StreamSupport;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.graalvm.polyglot.Source;
 import org.slf4j.Logger;
@@ -49,10 +51,15 @@ public class ScriptService implements LifecycleService {
         processors = eng.service(ProcessorService.class);
         commands = eng.service(CommandService.class);
 
+        final Boolean debug = settings.attempt("script.debug")
+                .map("true"::equals)
+                .orElse(false);
+
         final ScriptInterface scriptInterface = new ScriptInterface(
                 eng.service(EntityService.class),
                 components,
-                eng.service(WebSocketService.class));
+                eng.service(WebSocketService.class),
+                debug);
         exec = new ScriptExecutor(scriptInterface);
 
     }
@@ -64,52 +71,75 @@ public class ScriptService implements LifecycleService {
         log.info("Loading scripts from base directory: {}", baseDir);
         log.info("Loading component scripts...");
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(Path.of(baseDir + "/component"))) {
-            StreamSupport.stream(ds.spliterator(), false)
+            final List<Source> sources = StreamSupport.stream(ds.spliterator(), false)
                     .sorted().sequential()
                     .peek(path -> log.info(path.toString()))
                     .map(ScriptService::loadSource)
-                    .map(m -> JsModule.load(m, exec))
-                    .map(JsComponent::new)
-                    .forEach(components::register);
+                    .collect(Collectors.toList());
+
+            if (!sources.isEmpty()) {
+                exec.batchDescribeModules(sources)
+                        .stream()
+                        .map(d -> new JsComponent((JsModule) () -> d.proxy, d.name, d.type))
+                        .forEach(components::register);
+            }
         } catch (IOException e) {
             throw new CriticalError("Failed to load component script.", e);
         }
 
         log.info("Running bootstrap scripts...");
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(Path.of(baseDir + "/bootstrap"))) {
-            StreamSupport.stream(ds.spliterator(), false)
+            final List<Source> sources = StreamSupport.stream(ds.spliterator(), false)
                     .sorted().sequential()
                     .peek(path -> log.info(path.toString()))
                     .map(ScriptService::loadSource)
-                    .map(m -> JsModule.load(m, exec))
-                    .map(JsBootstrap::load)
-                    .forEach(b -> b.run());
+                    .collect(Collectors.toList());
+
+            if (!sources.isEmpty()) {
+                exec.batchDescribeModules(sources)
+                        .stream()
+                        .map(d -> (JsModule) () -> d.proxy)
+                        .map(JsBootstrap::load)
+                        .forEach(b -> b.run());
+            }
         } catch (IOException e) {
             throw new CriticalError("Failed to run bootstrap script.", e);
         }
 
         log.info("Loading processor scripts...");
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(Path.of(baseDir + "/processor"))) {
-            StreamSupport.stream(ds.spliterator(), false)
+            final List<Source> sources = StreamSupport.stream(ds.spliterator(), false)
                     .sorted().sequential()
                     .peek(path -> log.info(path.toString()))
                     .map(ScriptService::loadSource)
-                    .map(m -> JsModule.load(m, exec))
-                    .map(m -> new JsComponentProcessor(m, components))
-                    .forEach(processors::register);
+                    .collect(Collectors.toList());
+
+            if (!sources.isEmpty()) {
+                exec.batchDescribeModules(sources)
+                        .stream()
+                        .map(d -> (JsModule) () -> d.proxy)
+                        .map(m -> new JsComponentProcessor(m, components))
+                        .forEach(processors::register);
+            }
         } catch (IOException e) {
             throw new CriticalError("Failed to load processor script.", e);
         }
 
         log.info("Loading command scripts...");
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(Path.of(baseDir + "/command"))) {
-            StreamSupport.stream(ds.spliterator(), false)
+            final List<Source> sources = StreamSupport.stream(ds.spliterator(), false)
                     .sorted().sequential()
                     .peek(path -> log.info(path.toString()))
                     .map(ScriptService::loadSource)
-                    .map(m -> JsModule.load(m, exec))
-                    .map(JsCommand::load)
-                    .forEach(commands::register);
+                    .collect(Collectors.toList());
+
+            if (!sources.isEmpty()) {
+                exec.batchDescribeModules(sources)
+                        .stream()
+                        .map(d -> (JsModule) () -> d.proxy)
+                        .map(JsCommand::load)
+                        .forEach(commands::register);
+            }
         } catch (IOException e) {
             throw new CriticalError("Failed to load command script.", e);
         }
