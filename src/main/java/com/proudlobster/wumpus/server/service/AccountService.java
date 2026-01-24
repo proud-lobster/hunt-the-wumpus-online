@@ -146,9 +146,13 @@ public class AccountService implements LifecycleService {
         if (session.is(ServerComponent.ACCOUNT_REF)) {
             session.reference(ServerComponent.ACCOUNT_REF)
                     .removeComponent(ServerComponent.SESSION_REF)
-                    .removeComponent(ServerComponent.CLIENT_TOKEN);
+                    .removeComponent(ServerComponent.CLIENT_TOKEN)
+                    .removeComponent(ServerComponent.DISCONNECT_TIMESTAMP);
+            Directive.EXECUTE.create(sessionId, "logout").handle();
         }
-        session.removeComponent(ServerComponent.ACCOUNT_REF);
+
+        session.removeComponent(ServerComponent.ACCOUNT_REF)
+                .expire();
 
         return Directive.LOGOUT.create(sessionId, LOGOUT_SUCCESS);
     }

@@ -1,6 +1,7 @@
 package com.proudlobster.wumpus.server.io;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -57,6 +58,10 @@ public interface ClientMessage {
             return "";
         }
         return Arrays.stream(parts, from, parts.length).collect(Collectors.joining(PAYLOAD_DELIMITER));
+    }
+
+    default Optional<ClientMessage> handle() {
+        return directive().handle(this);
     }
 
 }

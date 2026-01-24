@@ -1,6 +1,8 @@
 # Hunt the Wumpus: Online
 
 notes
-- not regenning pools
--- for some reason ticks stop updating after loading char???
-- load char on reconnect
+- need to fix up client load
+-- every time client loads, clean HUD
+-- make sure login is good (seems to be now)
+-- on login, start pushing data! (lobby or char HUD)
+-- check reconnect

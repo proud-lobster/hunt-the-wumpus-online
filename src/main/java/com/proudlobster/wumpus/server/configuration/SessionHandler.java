@@ -62,6 +62,6 @@ public class SessionHandler {
     }
 
     public boolean isOpen(final Long sessionId) {
-        return sessions.get(sessionId).isOpen();
+        return sessions.containsKey(sessionId) && sessions.get(sessionId).isOpen();
     }
 }

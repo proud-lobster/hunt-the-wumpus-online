@@ -271,6 +271,21 @@ public class EntityService implements LifecycleService {
         storageService.write(e.identifier(), e.delegate());
     }
 
+    /**
+     * Persist entity then clear it from memory.
+     * 
+     * @param e the entity to vacate
+     */
+    public void vacate(final Entity e) {
+        persist(e);
+        entities.remove(e.identifier());
+        e.delegate()
+                .keySet()
+                .stream()
+                .forEach(c -> componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet())
+                        .remove(e.identifier()));
+    }
+
     public Optional<Entity> lookup(final Component c) {
         return lookup(c, "");
     }

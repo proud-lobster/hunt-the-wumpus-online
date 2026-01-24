@@ -24,7 +24,6 @@ public abstract class SingleItemWorker<W> extends ScheduledWorker<W> {
 
     @Override
     public void run() {
-        System.out.println("Running single item worker at " + System.currentTimeMillis());
         try {
             fetch().ifPresent(this::work);
         } catch (final Exception e) {

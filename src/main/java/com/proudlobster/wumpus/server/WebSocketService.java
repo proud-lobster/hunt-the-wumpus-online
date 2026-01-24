@@ -2,7 +2,6 @@ package com.proudlobster.wumpus.server;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
@@ -16,6 +15,7 @@ import com.proudlobster.wumpus.core.service.CommandService;
 import com.proudlobster.wumpus.core.service.ComponentService;
 import com.proudlobster.wumpus.core.service.EntityService;
 import com.proudlobster.wumpus.core.service.LifecycleService;
+import com.proudlobster.wumpus.core.service.ProcessorService;
 import com.proudlobster.wumpus.core.service.SettingService;
 import com.proudlobster.wumpus.core.worker.DelegateWorker;
 import com.proudlobster.wumpus.core.worker.Worker;
@@ -26,6 +26,8 @@ import com.proudlobster.wumpus.server.io.ClientMessage;
 import com.proudlobster.wumpus.server.io.Directive;
 import com.proudlobster.wumpus.server.io.InboxWorker;
 import com.proudlobster.wumpus.server.io.OutboxWorker;
+import com.proudlobster.wumpus.server.processor.DisconnectTimestampProcessor;
+import com.proudlobster.wumpus.server.processor.SessionProcessor;
 import com.proudlobster.wumpus.server.service.AccountService;
 
 public class WebSocketService implements LifecycleService {
@@ -36,6 +38,7 @@ public class WebSocketService implements LifecycleService {
     private EntityService entities;
     private AccountService accounts;
     private CommandService commands;
+    private SessionHandler sessions;
     private InboxWorker inbox;
     private OutboxWorker outbox;
 
@@ -54,6 +57,10 @@ public class WebSocketService implements LifecycleService {
         Arrays.stream(ServerComponent.values())
                 .forEach(c -> eng.service(ComponentService.class)
                         .register(c));
+
+        final ProcessorService processors = eng.service(ProcessorService.class);
+        processors.register(new SessionProcessor(this::isOpen));
+        processors.register(new DisconnectTimestampProcessor());
     }
 
     @Override
@@ -65,7 +72,7 @@ public class WebSocketService implements LifecycleService {
         final AtomicReference<Worker<ClientMessage>> outboxRef = new AtomicReference<>();
         final DelegateWorker<ClientMessage> outboxRefDel = () -> outboxRef.get();
         inbox = new InboxWorker(settings.requireNumber("server.inbox.schedule.intervalMillis"), outboxRefDel);
-        final SessionHandler sessions = new SessionHandler(inbox, entities);
+        sessions = new SessionHandler(inbox, entities);
         outbox = new OutboxWorker(settings.requireNumber("server.outbox.schedule.intervalMillis"), sessions);
         outboxRef.set(outbox);
 
@@ -115,5 +122,9 @@ public class WebSocketService implements LifecycleService {
                 .map(Entity::identifier)
                 .map(s -> dir.create(s, args))
                 .ifPresent(outbox::submit);
+    }
+
+    public boolean isOpen(final Long sessionId) {
+        return sessions != null ? sessions.isOpen(sessionId) : false;
     }
 }

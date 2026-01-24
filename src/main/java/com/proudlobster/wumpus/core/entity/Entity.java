@@ -117,6 +117,10 @@ public interface Entity extends Comparable<Entity> {
         return addComponent(CoreComponent.EXPIRED).persist();
     }
 
+    default void vacate() {
+        service().vacate(this);
+    }
+
     /**
      * @param c the component to check
      * @return the entity referenced by this component

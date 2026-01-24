@@ -50,4 +50,8 @@ public enum Directive {
     public ClientMessage create(final Long sessionId, final String payload) {
         return ClientMessage.create(sessionId, this, payload);
     }
+
+    public ClientMessage create(final Long sessionId) {
+        return ClientMessage.create(sessionId, this, "");
+    }
 }
