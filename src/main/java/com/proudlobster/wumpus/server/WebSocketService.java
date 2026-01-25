@@ -90,6 +90,9 @@ public class WebSocketService implements LifecycleService {
                 settings.getCritical("server.endpoint.path"));
         JakartaWebSocketServletContainerInitializer.configure(handler, configurator);
 
+        // Forces disconnects into memory so they can be logged out
+        entities.lookup(ServerComponent.DISCONNECT_TIMESTAMP);
+
         log.info("+--- Starting server outbox listener...");
         outbox.start();
         log.info("+--- Starting server inbox listener...");

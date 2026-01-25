@@ -70,7 +70,7 @@ public interface Entity extends Comparable<Entity> {
      * @return true if the entity has this component, false otherwise
      */
     default boolean is(final Component c) {
-        return delegate().containsKey(c);
+        return delegate().containsKey(c) && delegate().get(c) != null;
     }
 
     /**
@@ -80,7 +80,7 @@ public interface Entity extends Comparable<Entity> {
      *                        component
      */
     default String stringValue(final Component c) {
-        return Validator.nonNull(delegate().get(c), () -> ERROR_NO_STRING_VALUE.parse(identifier(), c.name()));
+        return delegate().getOrDefault(c, "");
     }
 
     /**

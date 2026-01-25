@@ -56,6 +56,9 @@ public class EntityService implements LifecycleService {
 
         @Override
         public Map<Component, String> delegate() {
+            if (!service.entities.containsKey(identifier)) {
+                service.checkByIdentifier(identifier);
+            }
             return service.entities.get(identifier);
         }
 
@@ -159,9 +162,11 @@ public class EntityService implements LifecycleService {
                 settingService.requireNumber("storage.activity.intervalMillis")) {
             @Override
             public void work(final Long item) {
-                LOG.info("+- Writing entity ID {} to storage...", item);
-                storageService.write(item, entities.get(item));
-                LOG.info("+- Entity ID {} write complete.", item);
+                if (entities.get(item) != null) {
+                    LOG.info("+- Writing entity ID {} to storage...", item);
+                    storageService.write(item, entities.get(item));
+                    LOG.info("+- Entity ID {} write complete.", item);
+                }
             }
         };
     }
@@ -278,16 +283,25 @@ public class EntityService implements LifecycleService {
      */
     public void vacate(final Entity e) {
         persist(e);
-        entities.remove(e.identifier());
         e.delegate()
                 .keySet()
                 .stream()
                 .forEach(c -> componentIndex.computeIfAbsent(c, k -> ConcurrentHashMap.newKeySet())
                         .remove(e.identifier()));
+        entities.remove(e.identifier());
     }
 
     public Optional<Entity> lookup(final Component c) {
-        return lookup(c, "");
+        final Set<Entity> inMemory = streamByComponent(c).collect(Collectors.toSet());
+        final Stream<InMemoryEntity> inStorage = storageService
+                .readByComponent(c.name())
+                .entrySet()
+                .stream()
+                .filter(entry -> !entities.keySet().contains(entry.getKey()))
+                .map(entry -> new InMemoryEntity(entry.getKey(), this, this.componentService, entry.getValue()));
+        return Stream.concat(inMemory.stream(), inStorage)
+                .sorted()
+                .findFirst();
     }
 
     public Optional<Entity> lookup(final Component c, final String v) {

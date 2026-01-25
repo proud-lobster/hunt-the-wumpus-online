@@ -92,6 +92,7 @@ public class AccountService implements LifecycleService {
     public Optional<Entity> sessionByPlayer(final Long playerId) {
         return Optional.ofNullable(entities.byIdentifier(playerId))
                 .map(e -> e.reference(ServerComponent.ACCOUNT_REF))
+                .filter(e -> e.is(ServerComponent.SESSION_REF))
                 .map(e -> e.reference(ServerComponent.SESSION_REF));
     }
 

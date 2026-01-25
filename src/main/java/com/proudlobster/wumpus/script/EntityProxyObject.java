@@ -34,7 +34,8 @@ public class EntityProxyObject implements ProxyObject, Entity {
                 "addContents", this::addContents,
                 "removeContents", this::removeContents,
                 "persist", this::persist,
-                "expire", this::expire);
+                "expire", this::expire,
+                "vacate", this::vacate);
     }
 
     private Object addContents(final Value... vs) {
@@ -57,6 +58,11 @@ public class EntityProxyObject implements ProxyObject, Entity {
 
     private Object expire(final Value... vs) {
         return e.expire();
+    }
+
+    public Object vacate(final Value... vs) {
+        e.vacate();
+        return null;
     }
 
     private Object memberValue(final Component c) {
